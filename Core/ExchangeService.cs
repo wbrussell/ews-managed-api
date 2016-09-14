@@ -1480,6 +1480,23 @@ namespace Microsoft.Exchange.WebServices.Data
         /// </summary>
         /// <param name="items">The items to load the properties of.</param>
         /// <param name="propertySet">The set of properties to load.</param>
+        /// <returns>A ServiceResponseCollection providing results for each of the specified items.</returns>
+        public async Task< ServiceResponseCollection<ServiceResponse>> LoadPropertiesForItemsAsync(IEnumerable<Item> items, PropertySet propertySet)
+        {
+            EwsUtilities.ValidateParamCollection(items, "items");
+            EwsUtilities.ValidateParam(propertySet, "propertySet");
+
+            return await this.InternalLoadPropertiesForItemsAsync(
+                items,
+                propertySet,
+                ServiceErrorHandling.ReturnErrors);
+        }
+
+        /// <summary>
+        /// Loads the properties of multiple items in a single call to EWS.
+        /// </summary>
+        /// <param name="items">The items to load the properties of.</param>
+        /// <param name="propertySet">The set of properties to load.</param>
         /// <param name="errorHandling">Indicates the type of error handling should be done.</param>
         /// <returns>A ServiceResponseCollection providing results for each of the specified items.</returns>
         internal ServiceResponseCollection<ServiceResponse> InternalLoadPropertiesForItems(
@@ -1493,6 +1510,26 @@ namespace Microsoft.Exchange.WebServices.Data
             request.PropertySet = propertySet;
 
             return request.Execute();
+        }
+
+        /// <summary>
+        /// Loads the properties of multiple items in a single call to EWS.
+        /// </summary>
+        /// <param name="items">The items to load the properties of.</param>
+        /// <param name="propertySet">The set of properties to load.</param>
+        /// <param name="errorHandling">Indicates the type of error handling should be done.</param>
+        /// <returns>A ServiceResponseCollection providing results for each of the specified items.</returns>
+        internal async Task<ServiceResponseCollection<ServiceResponse>> InternalLoadPropertiesForItemsAsync(
+            IEnumerable<Item> items,
+            PropertySet propertySet,
+            ServiceErrorHandling errorHandling)
+        {
+            GetItemRequestForLoad request = new GetItemRequestForLoad(this, errorHandling);
+
+            request.ItemIds.AddRange(items);
+            request.PropertySet = propertySet;
+
+            return await request.ExecuteAsync();
         }
 
         /// <summary>
