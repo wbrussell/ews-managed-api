@@ -298,6 +298,25 @@ namespace Microsoft.Exchange.WebServices.Data
         }
 
         /// <summary>
+        /// Binds to a folder.
+        /// </summary>
+        /// <param name="folderId">The folder id.</param>
+        /// <param name="propertySet">The property set.</param>
+        /// <returns>Folder</returns>
+        internal async System.Threading.Tasks.Task<Folder> BindToFolderAsync(FolderId folderId, PropertySet propertySet)
+        {
+            EwsUtilities.ValidateParam(folderId, "folderId");
+            EwsUtilities.ValidateParam(propertySet, "propertySet");
+
+            ServiceResponseCollection<GetFolderResponse> responses = await this.InternalBindToFoldersAsync(
+                new[] { folderId },
+                propertySet,
+                ServiceErrorHandling.ThrowOnError
+            );
+
+            return responses[0].Folder;
+        }
+        /// <summary>
         /// Binds to folder.
         /// </summary>
         /// <typeparam name="TFolder">The type of the folder.</typeparam>
@@ -308,6 +327,33 @@ namespace Microsoft.Exchange.WebServices.Data
             where TFolder : Folder
         {
             Folder result = this.BindToFolder(folderId, propertySet);
+
+            if (result is TFolder)
+            {
+                return (TFolder)result;
+            }
+            else
+            {
+                throw new ServiceLocalException(
+                    string.Format(
+                        Strings.FolderTypeNotCompatible,
+                        result.GetType().Name,
+                        typeof(TFolder).Name));
+            }
+        }
+
+
+        /// <summary>
+        /// Binds to folder.
+        /// </summary>
+        /// <typeparam name="TFolder">The type of the folder.</typeparam>
+        /// <param name="folderId">The folder id.</param>
+        /// <param name="propertySet">The property set.</param>
+        /// <returns>Folder</returns>
+        internal async System.Threading.Tasks.Task<TFolder> BindToFolderAsync<TFolder>(FolderId folderId, PropertySet propertySet)
+            where TFolder : Folder
+        {
+            Folder result = await this.BindToFolderAsync(folderId, propertySet);
 
             if (result is TFolder)
             {
@@ -348,6 +394,26 @@ namespace Microsoft.Exchange.WebServices.Data
         /// </summary>
         /// <param name="folderIds">The Ids of the folders to bind to.</param>
         /// <param name="propertySet">The set of properties to load.</param>
+        /// <returns>A ServiceResponseCollection providing results for each of the specified folder Ids.</returns>
+        public async System.Threading.Tasks.Task<ServiceResponseCollection<GetFolderResponse>> BindToFoldersAsync(
+            IEnumerable<FolderId> folderIds,
+            PropertySet propertySet)
+        {
+            EwsUtilities.ValidateParamCollection(folderIds, "folderIds");
+            EwsUtilities.ValidateParam(propertySet, "propertySet");
+
+            return await this.InternalBindToFoldersAsync(
+                folderIds,
+                propertySet,
+                ServiceErrorHandling.ReturnErrors
+            );
+        }
+
+        /// <summary>
+        /// Binds to multiple folders in a single call to EWS.
+        /// </summary>
+        /// <param name="folderIds">The Ids of the folders to bind to.</param>
+        /// <param name="propertySet">The set of properties to load.</param>
         /// <param name="errorHandling">Type of error handling to perform.</param>
         /// <returns>A ServiceResponseCollection providing results for each of the specified folder Ids.</returns>
         private ServiceResponseCollection<GetFolderResponse> InternalBindToFolders(
@@ -363,6 +429,25 @@ namespace Microsoft.Exchange.WebServices.Data
             return request.Execute();
         }
 
+        /// <summary>
+        /// Binds to multiple folders in a single call to EWS.
+        /// </summary>
+        /// <param name="folderIds">The Ids of the folders to bind to.</param>
+        /// <param name="propertySet">The set of properties to load.</param>
+        /// <param name="errorHandling">Type of error handling to perform.</param>
+        /// <returns>A ServiceResponseCollection providing results for each of the specified folder Ids.</returns>
+        private async System.Threading.Tasks.Task<ServiceResponseCollection<GetFolderResponse>> InternalBindToFoldersAsync(
+            IEnumerable<FolderId> folderIds,
+            PropertySet propertySet,
+            ServiceErrorHandling errorHandling)
+        {
+            GetFolderRequest request = new GetFolderRequest(this, errorHandling);
+
+            request.FolderIds.AddRange(folderIds);
+            request.PropertySet = propertySet;
+
+            return await request.ExecuteAsync();
+        }
         /// <summary>
         /// Deletes a folder. Calling this method results in a call to EWS.
         /// </summary>
@@ -1313,6 +1398,28 @@ namespace Microsoft.Exchange.WebServices.Data
         /// </summary>
         /// <param name="itemIds">The Ids of the items to bind to.</param>
         /// <param name="propertySet">The set of properties to load.</param>
+        /// <param name="anchorMailbox">The SmtpAddress of mailbox that hosts all items we need to bind to</param>
+        /// <param name="errorHandling">Type of error handling to perform.</param>
+        /// <returns>A ServiceResponseCollection providing results for each of the specified item Ids.</returns>
+        private async System.Threading.Tasks.Task<ServiceResponseCollection<GetItemResponse>> InternalBindToItemsAsync(
+            IEnumerable<ItemId> itemIds,
+            PropertySet propertySet,
+            string anchorMailbox,
+            ServiceErrorHandling errorHandling)
+        {
+            GetItemRequest request = new GetItemRequest(this, errorHandling);
+
+            request.ItemIds.AddRange(itemIds);
+            request.PropertySet = propertySet;
+            request.AnchorMailbox = anchorMailbox;
+
+            return await request.ExecuteAsync();
+        }
+        /// <summary>
+        /// Binds to multiple items in a single call to EWS.
+        /// </summary>
+        /// <param name="itemIds">The Ids of the items to bind to.</param>
+        /// <param name="propertySet">The set of properties to load.</param>
         /// <returns>A ServiceResponseCollection providing results for each of the specified item Ids.</returns>
         public ServiceResponseCollection<GetItemResponse> BindToItems(IEnumerable<ItemId> itemIds, PropertySet propertySet)
         {
@@ -1376,6 +1483,25 @@ namespace Microsoft.Exchange.WebServices.Data
         /// <summary>
         /// Binds to item.
         /// </summary>
+        /// <param name="itemId">The item id.</param>
+        /// <param name="propertySet">The property set.</param>
+        /// <returns>Item.</returns>
+        internal async System.Threading.Tasks.Task<Item> BindToItemAsync(ItemId itemId, PropertySet propertySet)
+        {
+            EwsUtilities.ValidateParam(itemId, "itemId");
+            EwsUtilities.ValidateParam(propertySet, "propertySet");
+
+            ServiceResponseCollection<GetItemResponse> responses = await this.InternalBindToItemsAsync(
+                new ItemId[] { itemId },
+                propertySet,
+                null, /* anchorMailbox */
+                ServiceErrorHandling.ThrowOnError);
+
+            return responses[0].Item;
+        }
+        /// <summary>
+        /// Binds to item.
+        /// </summary>
         /// <typeparam name="TItem">The type of the item.</typeparam>
         /// <param name="itemId">The item id.</param>
         /// <param name="propertySet">The property set.</param>
@@ -1399,6 +1525,31 @@ namespace Microsoft.Exchange.WebServices.Data
             }
         }
 
+        /// <summary>
+        /// Binds to item.
+        /// </summary>
+        /// <typeparam name="TItem">The type of the item.</typeparam>
+        /// <param name="itemId">The item id.</param>
+        /// <param name="propertySet">The property set.</param>
+        /// <returns>Item</returns>
+        internal async System.Threading.Tasks.Task<TItem> BindToItemAsync<TItem>(ItemId itemId, PropertySet propertySet)
+            where TItem : Item
+        {
+            Item result = await this.BindToItemAsync(itemId, propertySet);
+
+            if (result is TItem)
+            {
+                return (TItem)result;
+            }
+            else
+            {
+                throw new ServiceLocalException(
+                    string.Format(
+                        Strings.ItemTypeNotCompatible,
+                        result.GetType().Name,
+                        typeof(TItem).Name));
+            }
+        }
         /// <summary>
         /// Deletes multiple items in a single call to EWS.
         /// </summary>
@@ -1810,6 +1961,34 @@ namespace Microsoft.Exchange.WebServices.Data
             return request.Execute();
         }
 
+
+        /// <summary>
+        /// Gets an attachment.
+        /// </summary>
+        /// <param name="attachments">The attachments.</param>
+        /// <param name="bodyType">Type of the body.</param>
+        /// <param name="additionalProperties">The additional properties.</param>
+        /// <param name="errorHandling">Type of error handling to perform.</param>
+        /// <returns>Service response collection.</returns>
+        private async System.Threading.Tasks.Task<ServiceResponseCollection<GetAttachmentResponse>> InternalGetAttachmentsAsync(
+            IEnumerable<Attachment> attachments,
+            BodyType? bodyType,
+            IEnumerable<PropertyDefinitionBase> additionalProperties,
+            ServiceErrorHandling errorHandling)
+        {
+            GetAttachmentRequest request = new GetAttachmentRequest(this, errorHandling);
+
+            request.Attachments.AddRange(attachments);
+            request.BodyType = bodyType;
+
+            if (additionalProperties != null)
+            {
+                request.AdditionalProperties.AddRange(additionalProperties);
+            }
+
+            return await request.ExecuteAsync();
+        }
+
         /// <summary>
         /// Gets attachments.
         /// </summary>
@@ -1828,6 +2007,27 @@ namespace Microsoft.Exchange.WebServices.Data
                 additionalProperties,
                 ServiceErrorHandling.ReturnErrors);
         }
+
+
+        /// <summary>
+        /// Gets attachments.
+        /// </summary>
+        /// <param name="attachments">The attachments.</param>
+        /// <param name="bodyType">Type of the body.</param>
+        /// <param name="additionalProperties">The additional properties.</param>
+        /// <returns>Service response collection.</returns>
+        public async System.Threading.Tasks.Task<ServiceResponseCollection<GetAttachmentResponse>> GetAttachmentsAsync(
+            Attachment[] attachments,
+            BodyType? bodyType,
+            IEnumerable<PropertyDefinitionBase> additionalProperties)
+        {
+            return await this.InternalGetAttachmentsAsync(
+                attachments,
+                bodyType,
+                additionalProperties,
+                ServiceErrorHandling.ReturnErrors);
+        }
+
 
         /// <summary>
         /// Gets attachments.
@@ -1855,6 +2055,31 @@ namespace Microsoft.Exchange.WebServices.Data
         }
 
         /// <summary>
+        /// Gets attachments.
+        /// </summary>
+        /// <param name="attachmentIds">The attachment ids.</param>
+        /// <param name="bodyType">Type of the body.</param>
+        /// <param name="additionalProperties">The additional properties.</param>
+        /// <returns>Service response collection.</returns>
+        public async System.Threading.Tasks.Task<ServiceResponseCollection<GetAttachmentResponse>> GetAttachmentsAsync(
+            string[] attachmentIds,
+            BodyType? bodyType,
+            IEnumerable<PropertyDefinitionBase> additionalProperties)
+        {
+            GetAttachmentRequest request = new GetAttachmentRequest(this, ServiceErrorHandling.ReturnErrors);
+
+            request.AttachmentIds.AddRange(attachmentIds);
+            request.BodyType = bodyType;
+
+            if (additionalProperties != null)
+            {
+                request.AdditionalProperties.AddRange(additionalProperties);
+            }
+
+            return await request.ExecuteAsync();
+        }
+
+        /// <summary>
         /// Gets an attachment.
         /// </summary>
         /// <param name="attachment">The attachment.</param>
@@ -1866,6 +2091,24 @@ namespace Microsoft.Exchange.WebServices.Data
             IEnumerable<PropertyDefinitionBase> additionalProperties)
         {
             this.InternalGetAttachments(
+                new Attachment[] { attachment },
+                bodyType,
+                additionalProperties,
+                ServiceErrorHandling.ThrowOnError);
+        }
+
+        /// <summary>
+        /// Gets an attachment.
+        /// </summary>
+        /// <param name="attachment">The attachment.</param>
+        /// <param name="bodyType">Type of the body.</param>
+        /// <param name="additionalProperties">The additional properties.</param>
+        internal async System.Threading.Tasks.Task GetAttachmentAsync(
+            Attachment attachment,
+            BodyType? bodyType,
+            IEnumerable<PropertyDefinitionBase> additionalProperties)
+        {
+            await this.InternalGetAttachmentsAsync(
                 new Attachment[] { attachment },
                 bodyType,
                 additionalProperties,
