@@ -23,6 +23,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+using System.Threading.Tasks;
+
 namespace Microsoft.Exchange.WebServices.Data
 {
     using System;
@@ -98,6 +100,28 @@ namespace Microsoft.Exchange.WebServices.Data
         internal GetRoomsResponse Execute()
         {
             GetRoomsResponse serviceResponse = (GetRoomsResponse)this.InternalExecute();
+            serviceResponse.ThrowIfNecessary();
+            return serviceResponse;
+        }
+
+        /// <summary>
+        /// Executes this request.
+        /// </summary>
+        /// <returns>Service response.</returns>
+        internal async Task<GetRoomsResponse> ExecuteAsync()
+        {
+            return await System.Threading.Tasks.Task.Factory.FromAsync<GetRoomsResponse>(this.BeginExecute, this.EndExecute, this);
+        }
+
+
+        /// <summary>
+        /// Ends executing this async request.
+        /// </summary>
+        /// <param name="asyncResult">The async result</param>
+        /// <returns>Service response collection.</returns>
+        internal GetRoomsResponse EndExecute(IAsyncResult asyncResult)
+        {
+            GetRoomsResponse serviceResponse = (GetRoomsResponse)this.EndInternalExecute(asyncResult);
             serviceResponse.ThrowIfNecessary();
             return serviceResponse;
         }
