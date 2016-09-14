@@ -23,6 +23,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+using System.Threading.Tasks;
+
 namespace Microsoft.Exchange.WebServices.Data
 {
     using System;
@@ -101,5 +103,27 @@ namespace Microsoft.Exchange.WebServices.Data
             serviceResponse.ThrowIfNecessary();
             return serviceResponse;
         }
+
+        /// <summary>
+        /// Executes this request in an async-await fashion.
+        /// </summary>
+        /// <returns>Service response collection promise.</returns>
+        internal async System.Threading.Tasks.Task<GetRoomListsResponse> ExecuteAsync()
+        {
+            return await System.Threading.Tasks.Task.Factory.FromAsync<GetRoomListsResponse>(this.BeginExecute, this.EndExecute, this);
+        }
+
+        /// <summary>
+        /// Ends executing this async request.
+        /// </summary>
+        /// <param name="asyncResult">The async result</param>
+        /// <returns>Service response collection.</returns>
+        internal GetRoomListsResponse EndExecute(IAsyncResult asyncResult)
+        {
+            GetRoomListsResponse serviceResponse = (GetRoomListsResponse)this.EndInternalExecute(asyncResult);
+            serviceResponse.ThrowIfNecessary();
+            return serviceResponse;
+        }
+
     }
 }
