@@ -23,6 +23,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+using System.Threading.Tasks;
+
 namespace Microsoft.Exchange.WebServices.Data
 {
     using System;
@@ -1258,6 +1260,45 @@ namespace Microsoft.Exchange.WebServices.Data
         }
 
         /// <summary>
+        /// Finds items.
+        /// </summary>
+        /// <typeparam name="TItem">The type of the item.</typeparam>
+        /// <param name="parentFolderIds">The parent folder ids.</param>
+        /// <param name="searchFilter">The search filter. Available search filter classes
+        /// include SearchFilter.IsEqualTo, SearchFilter.ContainsSubstring and 
+        /// SearchFilter.SearchFilterCollection</param>
+        /// <param name="queryString">query string to be used for indexed search.</param>
+        /// <param name="view">The view controlling the number of items returned.</param>
+        /// <param name="groupBy">The group by.</param>
+        /// <param name="errorHandlingMode">Indicates the type of error handling should be done.</param>
+        /// <returns>Service response collection.</returns>
+        internal async System.Threading.Tasks.Task<ServiceResponseCollection<FindItemResponse<TItem>>> FindItemsAsync<TItem>(
+            IEnumerable<FolderId> parentFolderIds,
+            SearchFilter searchFilter,
+            string queryString,
+            ViewBase view,
+            Grouping groupBy,
+            ServiceErrorHandling errorHandlingMode)
+            where TItem : Item
+        {
+            EwsUtilities.ValidateParamCollection(parentFolderIds, "parentFolderIds");
+            EwsUtilities.ValidateParam(view, "view");
+            EwsUtilities.ValidateParamAllowNull(groupBy, "groupBy");
+            EwsUtilities.ValidateParamAllowNull(queryString, "queryString");
+            EwsUtilities.ValidateParamAllowNull(searchFilter, "searchFilter");
+
+            FindItemRequest<TItem> request = new FindItemRequest<TItem>(this, errorHandlingMode);
+
+            request.ParentFolderIds.AddRange(parentFolderIds);
+            request.SearchFilter = searchFilter;
+            request.QueryString = queryString;
+            request.View = view;
+            request.GroupBy = groupBy;
+
+            return await request.ExecuteAsync();
+        }
+
+        /// <summary>
         /// Obtains a grouped list of items by searching the contents of a specific folder. Calling this method results in a call to EWS.
         /// </summary>
         /// <param name="parentFolderName">The name of the folder in which to search for items.</param>
@@ -1278,6 +1319,28 @@ namespace Microsoft.Exchange.WebServices.Data
                 queryString,
                 view,
                 groupBy);
+        }
+
+        /// <summary>
+        /// Obtains a list of items by searching the contents of a specific folder. Calling this method results in a call to EWS.
+        /// </summary>
+        /// <param name="parentFolderId">The Id of the folder in which to search for items.</param>
+        /// <param name="queryString">the search string to be used for indexed search, if any.</param>
+        /// <param name="view">The view controlling the number of items returned.</param>
+        /// <returns>An object representing the results of the search operation.</returns>
+        public async System.Threading.Tasks.Task<FindItemsResults<Item>> FindItemsAsync(FolderId parentFolderId, string queryString, ViewBase view)
+        {
+            EwsUtilities.ValidateParamAllowNull(queryString, "queryString");
+
+            ServiceResponseCollection<FindItemResponse<Item>> responses = await this.FindItemsAsync<Item>(
+            new FolderId[] { parentFolderId },
+            null, /* searchFilter */
+            queryString,
+            view,
+            null,   /* groupBy */
+            ServiceErrorHandling.ThrowOnError);
+
+            return responses[0].Results;
         }
 
         /// <summary>
@@ -1304,6 +1367,37 @@ namespace Microsoft.Exchange.WebServices.Data
         }
 
         /// <summary>
+        /// Obtains a list of items by searching the contents of a specific folder. 
+        /// Along with conversations, a list of highlight terms are returned.
+        /// Calling this method results in a call to EWS.
+        /// </summary>
+        /// <param name="parentFolderId">The Id of the folder in which to search for items.</param>
+        /// <param name="queryString">the search string to be used for indexed search, if any.</param>
+        /// <param name="returnHighlightTerms">Flag indicating if highlight terms should be returned in the response</param>
+        /// <param name="view">The view controlling the number of items returned.</param>
+        /// <returns>An object representing the results of the search operation.</returns>
+        public async System.Threading.Tasks.Task<FindItemsResults<Item>> FindItemsAsync(FolderId parentFolderId, string queryString, bool returnHighlightTerms, ViewBase view)
+        {
+            FolderId[] parentFolderIds = new FolderId[] { parentFolderId };
+
+            EwsUtilities.ValidateParamCollection(parentFolderIds, "parentFolderIds");
+            EwsUtilities.ValidateParam(view, "view");
+            EwsUtilities.ValidateParamAllowNull(queryString, "queryString");
+            EwsUtilities.ValidateParamAllowNull(returnHighlightTerms, "returnHighlightTerms");
+            EwsUtilities.ValidateMethodVersion(this, ExchangeVersion.Exchange2013, "FindItems");
+
+            FindItemRequest<Item> request = new FindItemRequest<Item>(this, ServiceErrorHandling.ThrowOnError);
+
+            request.ParentFolderIds.AddRange(parentFolderIds);
+            request.QueryString = queryString;
+            request.ReturnHighlightTerms = returnHighlightTerms;
+            request.View = view;
+
+            ServiceResponseCollection<FindItemResponse<Item>> responses = await request.ExecuteAsync();
+            return responses[0].Results;
+        }
+
+        /// <summary>
         /// Obtains a list of appointments by searching the contents of a specific folder. Calling this method results in a call to EWS.
         /// </summary>
         /// <param name="parentFolderId">The id of the calendar folder in which to search for items.</param>
@@ -1325,6 +1419,25 @@ namespace Microsoft.Exchange.WebServices.Data
         /// <summary>
         /// Obtains a list of appointments by searching the contents of a specific folder. Calling this method results in a call to EWS.
         /// </summary>
+        /// <param name="parentFolderId">The id of the calendar folder in which to search for items.</param>
+        /// <param name="calendarView">The calendar view controlling the number of appointments returned.</param>
+        /// <returns>A collection of appointments representing the contents of the specified folder.</returns>
+        public async System.Threading.Tasks.Task<FindItemsResults<Appointment>> FindAppointmentsAsync(FolderId parentFolderId, CalendarView calendarView)
+        {
+            ServiceResponseCollection<FindItemResponse<Appointment>> response = await this.FindItemsAsync<Appointment>(
+                new FolderId[] { parentFolderId },
+                null, /* searchFilter */
+                null, /* queryString */
+                calendarView,
+                null, /* groupBy */
+                ServiceErrorHandling.ThrowOnError);
+
+            return response[0].Results;
+        }
+
+        /// <summary>
+        /// Obtains a list of appointments by searching the contents of a specific folder. Calling this method results in a call to EWS.
+        /// </summary>
         /// <param name="parentFolderName">The name of the calendar folder in which to search for items.</param>
         /// <param name="calendarView">The calendar view controlling the number of appointments returned.</param>
         /// <returns>A collection of appointments representing the contents of the specified folder.</returns>
@@ -1332,6 +1445,18 @@ namespace Microsoft.Exchange.WebServices.Data
         {
             return this.FindAppointments(new FolderId(parentFolderName), calendarView);
         }
+
+        /// <summary>
+        /// Obtains a list of appointments by searching the contents of a specific folder. Calling this method results in a call to EWS.
+        /// </summary>
+        /// <param name="parentFolderName">The name of the calendar folder in which to search for items.</param>
+        /// <param name="calendarView">The calendar view controlling the number of appointments returned.</param>
+        /// <returns>A collection of appointments representing the contents of the specified folder.</returns>
+        public async System.Threading.Tasks.Task<FindItemsResults<Appointment>> FindAppointmentsAsync(WellKnownFolderName parentFolderName, CalendarView calendarView)
+        {
+            return await this.FindAppointmentsAsync(new FolderId(parentFolderName), calendarView);
+        }
+
 
         /// <summary>
         /// Loads the properties of multiple items in a single call to EWS.
