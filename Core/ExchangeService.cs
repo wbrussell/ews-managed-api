@@ -3713,6 +3713,18 @@ namespace Microsoft.Exchange.WebServices.Data
         }
 
         /// <summary>
+        /// Retrieves a collection of all room lists in the organization.
+        /// </summary>
+        /// <returns>An EmailAddressCollection containing all the room lists in the organization.</returns>
+        public async Task<EmailAddressCollection> GetRoomListsAsync()
+        {
+            GetRoomListsRequest request = new GetRoomListsRequest(this);
+
+            var resp =  await request.ExecuteAsync();
+            return resp.RoomLists;
+        }
+
+        /// <summary>
         /// Retrieves a collection of all rooms in the specified room list in the organization.
         /// </summary>
         /// <param name="emailAddress">The e-mail address of the room list.</param>
@@ -3727,6 +3739,23 @@ namespace Microsoft.Exchange.WebServices.Data
 
             return request.Execute().Rooms;
         }
+
+        /// <summary>
+        /// Retrieves a collection of all rooms in the specified room list in the organization.
+        /// </summary>
+        /// <param name="emailAddress">The e-mail address of the room list.</param>
+        /// <returns>A collection of EmailAddress objects representing all the rooms within the specifed room list.</returns>
+        public async Task<Collection<EmailAddress>> GetRoomsAsync(EmailAddress emailAddress)
+        {
+            EwsUtilities.ValidateParam(emailAddress, "emailAddress");
+
+            GetRoomsRequest request = new GetRoomsRequest(this);
+
+            request.RoomList = emailAddress;
+            var resp = await request.ExecuteAsync();
+            return resp.Rooms;
+        }
+
         #endregion
 
         #region Conversation
