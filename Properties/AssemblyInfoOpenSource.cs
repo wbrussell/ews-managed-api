@@ -36,4 +36,4 @@ using System.Reflection;
 // this file will be updated with the appropriate version number and the release
 // will be built from there.
 [assembly: AssemblyVersion("2.2.1")]
-[assembly: AssemblyFileVersion("2.2.1.0")]
+[assembly: AssemblyFileVersion("2.2.1.1")]
